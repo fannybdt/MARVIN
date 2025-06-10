@@ -1,1 +1,2 @@
-# MARVIN_Structured_Representation_Learning_for_Cytometry
+# MARVIN - *Structured Representation Learning for Cytometry: Cell Annotation and Population Discovery*
+
