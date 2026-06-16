@@ -1,6 +1,6 @@
 # MARVIN
 
-This repository contains the official implementation of the paper [Generative cell phenotyping with structured latent populations](https://arxiv.org/abs/2306.10574).
+This repository contains the official implementation of the paper [Generative cell phenotyping with structured latent populations](https://www.sciencedirect.com/science/article/pii/S0006497125088792).
 
 ## Code
 
