@@ -28,7 +28,7 @@ test_loader:
   drop_last: false
 
 model:
-  M: 39  # number of markers
+  M: 32  # number of markers
   K: 14  # number of clusters
   D: 32  # latent dimension
   factor: 8
