@@ -142,7 +142,7 @@ def train(cfg: TrainConfig) -> None:
 
             model.eval()
             with torch.no_grad():
-                x_val, c_val = next(val_stream)
+                _, (x_val, c_val) = next(val_stream)
                 x_val, c_val = x_val.to(device), c_val.to(device)
 
                 val_loss = model.loss_unsupervised(x_val)
