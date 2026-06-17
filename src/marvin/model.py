@@ -1,6 +1,6 @@
-from dataclasses import dataclass
-
 import torch
+
+from dataclasses import dataclass
 from torch import nn
 from torch.nn import functional as F
 

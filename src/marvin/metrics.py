@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from sklearn.metrics import balanced_accuracy_score, f1_score
 from torch.utils.data import DataLoader
 
-from .model import MARVIN
+from marvin.model import MARVIN
 
 
 def compute_metrics(

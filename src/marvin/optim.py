@@ -3,7 +3,7 @@ import torch
 from dataclasses import dataclass
 from torch.optim.lr_scheduler import StepLR
 
-from .model import MARVIN
+from marvin.model import MARVIN
 
 
 class WarmupScheduler:

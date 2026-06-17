@@ -28,7 +28,12 @@ class CytometryDataset(Dataset):
     def __init__(self, root: str, M: int) -> None:
         data = pd.read_csv(root)
         data = data.sample(frac=1, random_state=42).reset_index(drop=True)
-        c = pd.factorize(data["label"], sort=True)[0]
+        # NaN labels (unlabeled cells from preprocessing) → -1 via factorize default.
+        # Missing label column (fully unsupervised) → all -1.
+        if "label" not in data.columns:
+            c = pd.array([-1] * len(data), dtype="int64")
+        else:
+            c = pd.factorize(data["label"], sort=True)[0]
         x = data.iloc[:, :M]
         self.x = torch.tensor(x.values, dtype=torch.float32)
         self.c = torch.tensor(c, dtype=torch.long)

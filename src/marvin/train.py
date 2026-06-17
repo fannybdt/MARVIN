@@ -10,10 +10,10 @@ from omegaconf import OmegaConf
 from pathlib import Path
 from typing import Literal
 
-from .data import CytometryDataset, DataLoaderConfig, compute_prior, infinite_stream
-from .metrics import compute_metrics, evaluate_testset
-from .model import MARVINConfig
-from .optim import AdamWConfig
+from marvin.data import CytometryDataset, DataLoaderConfig, compute_prior, infinite_stream
+from marvin.metrics import compute_metrics, evaluate_testset
+from marvin.model import MARVINConfig
+from marvin.optim import AdamWConfig
 
 
 @dataclass(kw_only=True)
