@@ -1,0 +1,60 @@
+run_id: experiment_1
+out_dir: outputs/${run_id}
+
+data: ???  # path to preprocessed CSV
+
+num_steps: 100000
+eval_every: 1000
+save_every: 5000
+masked: false
+mask_ratio: 0.9
+
+train_loader:
+  batch_size: 256
+  shuffle: true
+  num_workers: 4
+  drop_last: true
+
+val_loader:
+  batch_size: 256
+  shuffle: true
+  num_workers: 4
+  drop_last: true
+
+test_loader:
+  batch_size: 256
+  shuffle: false
+  num_workers: 0
+  drop_last: false
+
+model:
+  M: ???  # number of markers
+  K: ???  # number of clusters
+  D: ???  # latent dimension
+  factor: 4
+  dropout: 0.2
+  num_blocks: 2
+
+optimizer:
+  lr: 1.0e-3
+  base_lr: 1.0e-5
+  warmup_steps: 5000
+  step_size: 10
+  gamma: 0.5
+
+discovery:
+  enabled: false
+  n_supp_clusters: 2   # extra unknown clusters appended after labeled classes
+  unknown_mass: 0.002  # total probability mass reserved for unknown clusters
+
+wandb:
+  project: TFE
+  dir: outputs/
+  disable: false
+
+backend: slurm
+slurm:
+  cpus: 4
+  gpus: 1
+  mem: 32GB
+  time: "24:00:00"
