@@ -4,7 +4,7 @@ import dawgz
 import torch
 import wandb
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from heracls.core import from_dict
 from omegaconf import OmegaConf
 from pathlib import Path
@@ -101,6 +101,9 @@ def train(cfg: TrainConfig) -> None:
     print("= \t = \t = \t =")
 
     prev_epoch = 0
+    best_val_loss = float("inf")
+    Path(cfg.out_dir).mkdir(parents=True, exist_ok=True)
+    OmegaConf.save(OmegaConf.create(asdict(cfg)), f"{cfg.out_dir}/config.yaml")
     model.train()
     for step in range(1, cfg.num_steps + 1):
         epoch, (x, c) = next(train_stream)
@@ -152,6 +155,10 @@ def train(cfg: TrainConfig) -> None:
                     val_loss += model.loss_supervised(x_sup_val, c_sup_val)
 
                 accuracy, f1score, balanced_accuracy = compute_metrics(model, x_val, c_val)
+
+                if val_loss.item() < best_val_loss:
+                    best_val_loss = val_loss.item()
+                    torch.save(model.state_dict(), f"{cfg.out_dir}/MARVIN_{cfg.run_id}_best.pt")
             model.train()
 
             run.log({
