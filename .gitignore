@@ -5,7 +5,6 @@
 # Data
 *.h5
 *.npy
-*.csv
 
 # DAWGZ
 .dawgz/
@@ -18,7 +17,6 @@ wandb/
 
 # Others
 notebooks/
-data/
 outputs/
 local/
 
