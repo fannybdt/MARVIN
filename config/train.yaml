@@ -1,11 +1,11 @@
-run_id: test
+run_id: test_more_steps
 out_dir: outputs/${run_id}
 
 data: data/aml_true.csv  # path to preprocessed CSV
 
-num_steps: 4000
-eval_every: 200
-save_every: 5000
+num_steps: 50000
+eval_every: 500
+save_every: 10000
 masked: false
 mask_ratio: 0.5
 
