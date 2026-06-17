@@ -1,7 +1,7 @@
 run_id: experiment_1
 out_dir: outputs/${run_id}
 
-data: ./data/aml_true.csv  # path to preprocessed CSV
+data: data/aml_true.csv  # path to preprocessed CSV
 
 num_steps: 100000
 eval_every: 1000
