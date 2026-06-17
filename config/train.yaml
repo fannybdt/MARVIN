@@ -49,6 +49,9 @@ discovery:
 
 wandb:
   project: TFE
+  entity: montefiore_sail
+  name: ${run_id}
+  id: null
   dir: outputs/
   disable: false
 

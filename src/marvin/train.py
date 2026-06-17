@@ -20,11 +20,17 @@ from marvin.optim import AdamWConfig
 class WandBConfig:
     project: str
     dir: str
+    entity: str | None = None
+    name: str | None = None
+    id: str | None = None
     disable: bool = False
 
     def build(self, config: dict):
         return wandb.init(
             project=self.project,
+            entity=self.entity,
+            name=self.name,
+            id=self.id,
             dir=self.dir,
             config=config,
             mode="disabled" if self.disable else "online",
@@ -182,11 +188,11 @@ def train(cfg: TrainConfig) -> None:
 
     test_loss, accuracy, balanced_accuracy, f1score = evaluate_testset(model, testloader, device)
     run.log({
-        "test_loss": test_loss,
+        "test_loss": test_loss.item() if hasattr(test_loss, "item") else test_loss,
         "accuracy : test": accuracy,
         "F1-score : test": f1score,
         "balanced accuracy : test": balanced_accuracy,
-    })
+    }, step=cfg.num_steps)
     run.finish()
 
 

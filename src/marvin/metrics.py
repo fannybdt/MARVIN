@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 import torch.nn.functional as F
 
@@ -17,8 +19,10 @@ def compute_metrics(
     c_pred = torch.multinomial(q_c_x, 1, replacement=True).squeeze()
 
     accuracy = (c_pred == c).sum().item() / c.size(0)
-    f1 = f1_score(c.cpu().numpy(), c_pred.cpu().numpy(), average="macro")
-    bal_accuracy = balanced_accuracy_score(c.cpu().numpy(), c_pred.cpu().numpy())
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
+        f1 = f1_score(c.cpu().numpy(), c_pred.cpu().numpy(), average="macro")
+        bal_accuracy = balanced_accuracy_score(c.cpu().numpy(), c_pred.cpu().numpy())
     return accuracy, f1, bal_accuracy
 
 
@@ -49,8 +53,10 @@ def evaluate_testset(
             c = torch.multinomial(q_c_x, 1, replacement=True).squeeze()
 
             accuracy += (c == c_true).sum().item() / c_true.size(0)
-            f1 += f1_score(c_true.cpu().numpy(), c.cpu().numpy(), average="macro")
-            bal_accuracy += balanced_accuracy_score(c_true.cpu().numpy(), c.cpu().numpy())
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
+                f1 += f1_score(c_true.cpu().numpy(), c.cpu().numpy(), average="macro")
+                bal_accuracy += balanced_accuracy_score(c_true.cpu().numpy(), c.cpu().numpy())
 
     n = len(loader)
     return test_loss / n, accuracy / n, bal_accuracy / n, f1 / n
