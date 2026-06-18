@@ -1,8 +1,5 @@
 """Per-patient cell population analysis: unstimulated vs. peanut-stimulated conditions."""
 
-import sys
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -12,15 +9,15 @@ import torch.nn.functional as F
 
 from heracls.core import from_dict
 from omegaconf import OmegaConf
+from pathlib import Path
 
 from marvin.data import CytometryDataset
 from marvin.model import MARVIN
 from marvin.train import TrainConfig
 
-# ── Edit these before running ──────────────────────────────────────────────────
-OUT_DIR = Path("outputs/poised_discovery")
 DATA_PATH = Path("scyan_datasets/poised/poised_with_patients.csv")
 PLOTS_DIR = Path("PLOTS")
+OUT_DIR = Path("outputs/poised_discovery")
 
 CONDITION_COL = "category"
 STIM_VALUE = "Peanut stimulated"
@@ -31,7 +28,6 @@ UNKNOWN_LABEL = "Unknown"
 
 CLUSTER_OF_INTEREST = 22  # cluster index for the marker heatmap
 BATCH_SIZE = 1024
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def load_model(out_dir: Path, device: torch.device) -> tuple[MARVIN, int, list[str]]:
@@ -52,7 +48,6 @@ def load_model(out_dir: Path, device: torch.device) -> tuple[MARVIN, int, list[s
 
 
 def predict(model: MARVIN, x: torch.Tensor, device: torch.device) -> np.ndarray:
-    """Argmax cluster predictions (deterministic)."""
     preds = []
     with torch.no_grad():
         for start in range(0, len(x), BATCH_SIZE):
@@ -89,7 +84,9 @@ def compute_patient_proportions(
     for patient in patients:
         pdata = df[df[PATIENT_COL] == patient]
         stim = pdata[(pdata[CONDITION_COL] == STIM_VALUE) & (pdata[LABEL_COL] != UNKNOWN_LABEL)]
-        unstim = pdata[(pdata[CONDITION_COL] == UNSTIM_VALUE) & (pdata[LABEL_COL] != UNKNOWN_LABEL)]
+        unstim = pdata[
+            (pdata[CONDITION_COL] == UNSTIM_VALUE) & (pdata[LABEL_COL] != UNKNOWN_LABEL)
+        ]
 
         for subset, pred_rows, gt_rows in [
             (stim, pred_stim_rows, gt_stim_rows),
@@ -116,8 +113,6 @@ def pct_variation(stim: pd.DataFrame, unstim: pd.DataFrame) -> tuple[pd.Series, 
     return var.mean(), var.std()
 
 
-# ── Plots ──────────────────────────────────────────────────────────────────────
-
 def plot_variation_chart(
     pred_stim: pd.DataFrame,
     pred_unstim: pd.DataFrame,
@@ -138,10 +133,18 @@ def plot_variation_chart(
     bar_w = 0.4
 
     fig, ax = plt.subplots(figsize=(16, 6))
-    ax.bar(x, pred_mean.values, bar_w, yerr=pred_std.values,
-           label="Model", color="#F65353", capsize=4)
-    ax.bar(x[has_gt] + bar_w, gt_mean_aligned[has_gt].astype(float), bar_w,
-           yerr=gt_std_aligned[has_gt].astype(float), label="Ground truth", color="#F59A23", capsize=4)
+    ax.bar(
+        x, pred_mean.values, bar_w, yerr=pred_std.values, label="Model", color="#F65353", capsize=4
+    )
+    ax.bar(
+        x[has_gt] + bar_w,
+        gt_mean_aligned[has_gt].astype(float),
+        bar_w,
+        yerr=gt_std_aligned[has_gt].astype(float),
+        label="Ground truth",
+        color="#F59A23",
+        capsize=4,
+    )
     ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
     ax.set_xticks(x + bar_w / 2)
     ax.set_xticklabels(pred_mean.index, rotation=50, ha="right")
@@ -175,7 +178,9 @@ def plot_patient_trajectories(
             ax.plot(
                 ["Unstim", "Stim"],
                 [unstim.loc[patient, ct] * 100, stim.loc[patient, ct] * 100],
-                marker="o", color=color, linewidth=1.2,
+                marker="o",
+                color=color,
+                linewidth=1.2,
             )
         ax.set_title(ct, fontsize=9)
         ax.set_ylabel("Proportion (%)", fontsize=8)
@@ -213,7 +218,9 @@ def plot_marker_heatmap(
         x = torch.tensor(subset.iloc[:, :n_markers].values, dtype=torch.float32)
         mask = predict(model, x, device) == cluster_idx
         selected = subset.iloc[mask, :n_markers]
-        rows[label] = selected.mean(axis=0) if mask.any() else pd.Series(np.nan, index=marker_names)
+        rows[label] = (
+            selected.mean(axis=0) if mask.any() else pd.Series(np.nan, index=marker_names)
+        )
 
     mean_df = pd.DataFrame(rows, index=marker_names).T
     vmin, vmax = np.nanmin(mean_df.values), np.nanmax(mean_df.values)
@@ -226,7 +233,8 @@ def plot_marker_heatmap(
             cmap="coolwarm",
             xticklabels=marker_names,
             yticklabels=[label],
-            vmin=vmin, vmax=vmax,
+            vmin=vmin,
+            vmax=vmax,
             linewidths=0.2,
             linecolor="white",
             cbar_kws={"shrink": 0.5},
@@ -238,8 +246,6 @@ def plot_marker_heatmap(
     print(f"Saved: {output_path}")
     plt.close(fig)
 
-
-# ── Entry point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     PLOTS_DIR.mkdir(exist_ok=True)
@@ -256,16 +262,29 @@ if __name__ == "__main__":
     )
 
     plot_variation_chart(
-        pred_stim, pred_unstim, gt_stim, gt_unstim,
+        pred_stim,
+        pred_unstim,
+        gt_stim,
+        gt_unstim,
         PLOTS_DIR / "variation_stim_vs_unstim.svg",
     )
     plot_patient_trajectories(
-        pred_stim, pred_unstim,
+        pred_stim,
+        pred_unstim,
         PLOTS_DIR / "patient_trajectories.svg",
     )
 
-    cluster_name = cluster_names[CLUSTER_OF_INTEREST] if CLUSTER_OF_INTEREST < len(cluster_names) else f"Cluster {CLUSTER_OF_INTEREST}"
+    cluster_name = (
+        cluster_names[CLUSTER_OF_INTEREST]
+        if CLUSTER_OF_INTEREST < len(cluster_names)
+        else f"Cluster {CLUSTER_OF_INTEREST}"
+    )
     plot_marker_heatmap(
-        df, model, n_markers, CLUSTER_OF_INTEREST, cluster_name, device,
+        df,
+        model,
+        n_markers,
+        CLUSTER_OF_INTEREST,
+        cluster_name,
+        device,
         PLOTS_DIR / f"marker_heatmap_{cluster_name.replace(' ', '_')}.svg",
     )

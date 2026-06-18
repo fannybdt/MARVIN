@@ -1,4 +1,4 @@
-run_id: poised_discovery
+run_id: poised_50%
 out_dir: outputs/${run_id}
 
 data: /home/fbodart/scyan_datasets/poised/poised_known.csv  # path to preprocessed CSV
@@ -44,10 +44,10 @@ optimizer:
   gamma: 0.5
 
 discovery:
-  enabled: true
+  enabled: false
   n_supp_clusters: 3   # extra unknown clusters appended after labeled classes
   unknown_mass: 0.003  # total probability mass reserved for unknown clusters
-  masked_classes: ["TCD4 PeaReactive"]   # classes to treat as unlabeled for rediscovery experiments
+  masked_classes: []   # classes to treat as unlabeled for rediscovery experiments
                        # K must = (n_classes - len(masked_classes)) + n_supp_clusters
 
 wandb:
