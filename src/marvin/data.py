@@ -32,6 +32,13 @@ class CytometryDataset(Dataset):
             c = pd.array([-1] * len(data), dtype="int64")
         else:
             if masked_classes:
+                available = sorted(data["label"].dropna().unique().tolist())
+                unknown = [c for c in masked_classes if c not in available]
+                if unknown:
+                    raise ValueError(
+                        f"Unknown masked_classes: {unknown}\n"
+                        f"Available classes: {available}"
+                    )
                 data.loc[data["label"].isin(masked_classes), "label"] = None
             c = pd.factorize(data["label"], sort=True)[0]
         feature_cols = [col for col in data.columns if col not in ("label", "patient_id")][:M]
