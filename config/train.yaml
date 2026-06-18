@@ -65,4 +65,4 @@ slurm:
   mem: 32GB
   time: "24:00:00"
   partition: "a5000"
-  exclude: "compute05,compute03"
+  exclude: "compute-05,compute-03"
