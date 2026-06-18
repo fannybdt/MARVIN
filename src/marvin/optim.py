@@ -37,9 +37,10 @@ class AdamWConfig:
     warmup_steps: int
     step_size: int
     gamma: float
+    betas: tuple[float, float] = (0.9, 0.999)
 
     def build(self, model: MARVIN) -> tuple[torch.optim.Optimizer, WarmupScheduler, StepLR]:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr, betas=self.betas)
         warmup_scheduler = WarmupScheduler(
             optimizer,
             warmup_steps=self.warmup_steps,

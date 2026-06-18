@@ -124,11 +124,14 @@ class MARVIN(nn.Module):
 @dataclass(kw_only=True)
 class MARVINConfig:
     M: int
-    K: int
-    D: int
+    K: int | None = None  # if None, derived from data: (C - n_masked) + n_supp_clusters
+    D: int = 32
     factor: int = 4
     dropout: float = 0.2
     num_blocks: int = 2
 
-    def build(self) -> MARVIN:
-        return MARVIN(self.M, self.K, self.D, self.factor, self.dropout, self.num_blocks)
+    def build(self, K: int | None = None) -> MARVIN:
+        k = K if K is not None else self.K
+        if k is None:
+            raise ValueError("K must be set in config or derived from data")
+        return MARVIN(self.M, k, self.D, self.factor, self.dropout, self.num_blocks)

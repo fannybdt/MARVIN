@@ -29,7 +29,6 @@ test_loader:
 
 model:
   M: 32  # number of markers
-  K: 14  # number of clusters
   D: 32  # latent dimension
   factor: 8
   dropout: 0.3
@@ -38,14 +37,17 @@ model:
 optimizer:
   lr: 1.0e-3
   base_lr: 1.0e-5
+  betas: [0.9, 0.98]
   warmup_steps: 5000
   step_size: 10
   gamma: 0.5
 
 discovery:
-  enabled: false
-  n_supp_clusters: 0   # extra unknown clusters appended after labeled classes
-  unknown_mass: 0.002  # total probability mass reserved for unknown clusters
+  enabled: true
+  n_supp_clusters: 3   # extra unknown clusters appended after labeled classes
+  unknown_mass: 0.003  # total probability mass reserved for unknown clusters
+  masked_classes: []   # classes to treat as unlabeled for rediscovery experiments
+                       # K must = (n_classes - len(masked_classes)) + n_supp_clusters
 
 wandb:
   project: TFE

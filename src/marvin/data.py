@@ -25,16 +25,17 @@ class DataLoaderConfig:
 
 
 class CytometryDataset(Dataset):
-    def __init__(self, root: str, M: int) -> None:
+    def __init__(self, root: str, M: int, masked_classes: list[str] | None = None) -> None:
         data = pd.read_csv(root)
         data = data.sample(frac=1, random_state=42).reset_index(drop=True)
-        # NaN labels (unlabeled cells from preprocessing) → -1 via factorize default.
-        # Missing label column (fully unsupervised) → all -1.
         if "label" not in data.columns:
             c = pd.array([-1] * len(data), dtype="int64")
         else:
+            if masked_classes:
+                data.loc[data["label"].isin(masked_classes), "label"] = None
             c = pd.factorize(data["label"], sort=True)[0]
-        x = data.iloc[:, :M]
+        feature_cols = [col for col in data.columns if col not in ("label", "patient_id")][:M]
+        x = data[feature_cols]
         self.x = torch.tensor(x.values, dtype=torch.float32)
         self.c = torch.tensor(c, dtype=torch.long)
 
@@ -60,11 +61,12 @@ def infinite_stream(loader: DataLoader) -> Iterator[tuple[int, tuple]]:
 
 
 def compute_prior(c: torch.Tensor, K: int, n_supp_clusters: int, unknown_mass: float) -> torch.Tensor:
-    C = int(c.max().item()) + 1
+    labeled = c[c >= 0]
+    C = int(labeled.max().item()) + 1
     assert C + n_supp_clusters == K, (
         f"n_labeled_classes ({C}) + n_supp_clusters ({n_supp_clusters}) must equal K ({K})"
     )
-    counts = torch.bincount(c, minlength=C).float()
+    counts = torch.bincount(labeled, minlength=C).float()
     probas = counts / counts.sum()
     probas_scaled = probas * (1.0 - unknown_mass)
     unknown = torch.full((n_supp_clusters,), unknown_mass / n_supp_clusters)

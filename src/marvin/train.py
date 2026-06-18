@@ -4,7 +4,7 @@ import dawgz
 import torch
 import wandb
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from heracls.core import from_dict
 from omegaconf import OmegaConf
 from pathlib import Path
@@ -42,6 +42,7 @@ class DiscoveryConfig:
     enabled: bool = False
     n_supp_clusters: int = 0
     unknown_mass: float = 0.002
+    masked_classes: list[str] = field(default_factory=list)
 
 
 @dataclass(kw_only=True)
@@ -68,7 +69,7 @@ class TrainConfig:
 def train(cfg: TrainConfig) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataset = CytometryDataset(cfg.data, cfg.model.M)
+    dataset = CytometryDataset(cfg.data, cfg.model.M, masked_classes=cfg.discovery.masked_classes)
     train_ds, val_ds, test_ds = dataset.split()
 
     trainloader = cfg.train_loader.build(train_ds)
@@ -78,11 +79,13 @@ def train(cfg: TrainConfig) -> None:
     train_stream = infinite_stream(trainloader)
     val_stream = infinite_stream(valloader)
 
-    model = cfg.model.build().to(device)
+    n_labeled = int(dataset.c[dataset.c >= 0].max().item()) + 1
+    K = n_labeled + cfg.discovery.n_supp_clusters
+    model = cfg.model.build(K=K).to(device)
 
     if cfg.discovery.enabled:
         prior_log = compute_prior(
-            dataset.c, cfg.model.K, cfg.discovery.n_supp_clusters, cfg.discovery.unknown_mass
+            dataset.c, K, cfg.discovery.n_supp_clusters, cfg.discovery.unknown_mass
         )
         model.freeze_prior(prior_log.to(device))
     optimizer, warmup_scheduler, step_scheduler = cfg.optimizer.build(model)
@@ -145,10 +148,6 @@ def train(cfg: TrainConfig) -> None:
             prev_epoch = epoch
 
         if step % cfg.eval_every == 0 or step == cfg.num_steps:
-            for name, param in model.named_parameters():
-                if param.grad is not None:
-                    run.log({f"grad_{name}": wandb.Histogram(param.grad.cpu().numpy())})
-
             model.eval()
             with torch.no_grad():
                 _, (x_val, c_val) = next(val_stream)
@@ -169,6 +168,8 @@ def train(cfg: TrainConfig) -> None:
 
             run.log({
                 "step": step,
+                "epoch": epoch,
+                "lr": optimizer.param_groups[0]["lr"],
                 "train_loss": loss.item(),
                 "validation_loss": val_loss.item(),
                 "accuracy": accuracy,
