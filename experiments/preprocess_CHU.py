@@ -49,14 +49,7 @@ def load_patient(patient_dir: Path, patient: str) -> pd.DataFrame:
         if label in SKIP_LABELS:
             continue
 
-        df = pd.read_csv(csv_file, sep=";")
-
-        # Comma-decimal → dot-decimal (European locale CSVs)
-        for col in df.columns:
-            if df[col].dtype == object:
-                df[col] = pd.to_numeric(
-                    df[col].str.replace(",", ".", regex=False), errors="coerce"
-                )
+        df = pd.read_csv(csv_file, sep=";", decimal=",")
 
         df["label"] = label
         df["patient_id"] = patient
