@@ -14,6 +14,7 @@ Label is extracted from the filename by stripping the leading index and the
 patient name suffix (e.g. "02. LT_NK PEIKRISHVILI.csv" → "LT_NK").
 """
 
+import dawgz
 import re
 import pandas as pd
 
@@ -102,6 +103,11 @@ def preprocess(patients: list[str], root: Path, output: Path) -> pd.DataFrame:
     return result
 
 
-if __name__ == "__main__":
+def run() -> None:
     print(f"Processing {len(PATIENTS)} patients from {ROOT}\n")
     preprocess(PATIENTS, ROOT, OUTPUT)
+
+
+if __name__ == "__main__":
+    job = dawgz.job(run, cpus=4, mem="8GB", time="1:00:00")()
+    dawgz.schedule(job, backend="slurm")
