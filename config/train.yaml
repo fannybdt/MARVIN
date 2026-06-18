@@ -1,7 +1,7 @@
 run_id: poised_discovery
 out_dir: outputs/${run_id}
 
-data: /home/fbodart/scyan_datasets/posied/poised_known.csv  # path to preprocessed CSV
+data: /home/fbodart/scyan_datasets/poised/poised_known.csv  # path to preprocessed CSV
 
 num_epochs: 50
 # num_steps: 50000 (if preferred over epochs)
