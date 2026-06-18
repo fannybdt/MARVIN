@@ -53,6 +53,7 @@ class TrainConfig:
     num_steps: int | None = None
     num_epochs: int | None = None
     eval_every: int = 500
+    val_batches: int = 4
     save_every: int = 5000
     masked: bool
     mask_ratio: float
@@ -165,14 +166,21 @@ def train(cfg: TrainConfig) -> None:
         if step % cfg.eval_every == 0 or step == num_steps:
             model.eval()
             with torch.no_grad():
-                _, (x_val, c_val) = next(val_stream)
-                x_val, c_val = x_val.to(device), c_val.to(device)
-
-                val_loss = model.loss_unsupervised(x_val)
-                supervised_val = c_val >= 0
-                x_sup_val, c_sup_val = x_val[supervised_val], c_val[supervised_val]
-                if len(x_sup_val) > 0:
-                    val_loss += model.loss_supervised(x_sup_val, c_sup_val)
+                val_loss = torch.tensor(0.0, device=device)
+                x_val_batches, c_val_batches = [], []
+                for _ in range(cfg.val_batches):
+                    _, (x_val, c_val) = next(val_stream)
+                    x_val, c_val = x_val.to(device), c_val.to(device)
+                    x_val_batches.append(x_val)
+                    c_val_batches.append(c_val)
+                    val_loss += model.loss_unsupervised(x_val)
+                    supervised_val = c_val >= 0
+                    x_sup_val, c_sup_val = x_val[supervised_val], c_val[supervised_val]
+                    if len(x_sup_val) > 0:
+                        val_loss += model.loss_supervised(x_sup_val, c_sup_val)
+                val_loss = val_loss / cfg.val_batches
+                x_val = torch.cat(x_val_batches)
+                c_val = torch.cat(c_val_batches)
 
                 accuracy, f1score, balanced_accuracy, discovered = compute_metrics(model, x_val, c_val, n_labeled)
 
