@@ -22,8 +22,8 @@ from pathlib import Path
 from marvin.preprocessing import autologicle_transform, zscore_standardize
 
 # ── Edit these ─────────────────────────────────────────────────────────────────
-ROOT = Path("./KIT BCP_ALL MRD (CYTOGNOS)/MO NORMALES")
-OUTPUT = Path("data/bcp_all_normales.csv")
+ROOT = Path("/home/fbodart/CHU/KIT BCP_ALL MRD (CYTOGNOS)/MO NORMALES")
+OUTPUT = Path("/home/fbodart/CHU/marvin_preprocessed.csv")
 
 PATIENTS = ["Hincourt", "Peikrishvili", "Spaubek"]
 
@@ -53,7 +53,9 @@ def load_patient(patient_dir: Path, patient: str) -> pd.DataFrame:
         # Comma-decimal → dot-decimal (European locale CSVs)
         for col in df.columns:
             if df[col].dtype == object:
-                df[col] = pd.to_numeric(df[col].str.replace(",", ".", regex=False), errors="coerce")
+                df[col] = pd.to_numeric(
+                    df[col].str.replace(",", ".", regex=False), errors="coerce"
+                )
 
         df["label"] = label
         df["patient_id"] = patient
