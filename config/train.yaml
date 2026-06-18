@@ -58,9 +58,11 @@ wandb:
   dir: outputs/
   disable: false
 
-backend: slurm
+backend: slurm  # slurm or async (local)
 slurm:
   cpus: 4
   gpus: 1
   mem: 32GB
   time: "24:00:00"
+  partition: "a5000"
+  exclude: "compute05,compute03"
