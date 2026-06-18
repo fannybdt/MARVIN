@@ -186,6 +186,7 @@ def train(cfg: TrainConfig) -> None:
             torch.save(model.state_dict(), checkpoint)
             print(f"Model saved to {checkpoint}")
 
+    model.load_state_dict(torch.load(f"{cfg.out_dir}/MARVIN_{cfg.run_id}_best.pt", weights_only=True))
     test_loss, accuracy, balanced_accuracy, f1score = evaluate_testset(model, testloader, device)
     run.log({
         "test_loss": test_loss.item() if hasattr(test_loss, "item") else test_loss,
