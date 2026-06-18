@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Literal
 
 from marvin.data import CytometryDataset, DataLoaderConfig, compute_prior, infinite_stream
-from marvin.metrics import compute_metrics, evaluate_testset
+from marvin.metrics import compute_metrics, discovery_bar_chart, evaluate_testset
 from marvin.model import MARVINConfig
 from marvin.optim import AdamWConfig
 
@@ -111,13 +111,18 @@ def train(cfg: TrainConfig) -> None:
         "lr": cfg.optimizer.lr,
     })
 
-    print("\n\n= \t = \t = \t =")
-    print(
-        f" MARVIN {cfg.run_id} will train on {torch.cuda.device_count()} {device}"
-        f" and has {sum(p.numel() for p in model.parameters()) / 1e6} M parameters",
-        flush=True,
-    )
-    print("= \t = \t = \t =")
+    n_params = sum(p.numel() for p in model.parameters()) / 1e6
+    print(f"\n{'='*50}")
+    print(f"  MARVIN — {cfg.run_id}")
+    print(f"{'='*50}")
+    print(f"  device: {device}")
+    print(f"  parameters: {n_params:.2f}M")
+    print(f"  steps: {num_steps}")
+    print(f"  K={K} ({n_labeled} labeled + {cfg.discovery.n_supp_clusters} supplementary)")
+    print("  labeled classes:")
+    for i, name in enumerate(dataset.class_names):
+        print(f"    [{i}] {name}")
+    print(f"{'='*50}\n")
 
     prev_epoch = 0
     best_val_loss = float("inf")
@@ -169,14 +174,14 @@ def train(cfg: TrainConfig) -> None:
                 if len(x_sup_val) > 0:
                     val_loss += model.loss_supervised(x_sup_val, c_sup_val)
 
-                accuracy, f1score, balanced_accuracy = compute_metrics(model, x_val, c_val)
+                accuracy, f1score, balanced_accuracy, discovered = compute_metrics(model, x_val, c_val, n_labeled)
 
                 if val_loss.item() < best_val_loss:
                     best_val_loss = val_loss.item()
                     torch.save(model.state_dict(), f"{cfg.out_dir}/MARVIN_{cfg.run_id}_best.pt")
             model.train()
 
-            run.log({
+            log = {
                 "step": step,
                 "epoch": epoch,
                 "lr": optimizer.param_groups[0]["lr"],
@@ -185,7 +190,10 @@ def train(cfg: TrainConfig) -> None:
                 "accuracy": accuracy,
                 "F1-score": f1score,
                 "balanced accuracy": balanced_accuracy,
-            })
+            }
+            if cfg.discovery.enabled and discovered:
+                log["discovery/supplementary_assignments"] = discovery_bar_chart(discovered, dataset.class_names)
+            run.log(log)
             print(
                 f"Step {step}/{num_steps},"
                 f" val loss = {val_loss:.4f}, train loss = {loss.item():.4f}",
@@ -198,7 +206,7 @@ def train(cfg: TrainConfig) -> None:
             print(f"Model saved to {checkpoint}")
 
     model.load_state_dict(torch.load(f"{cfg.out_dir}/MARVIN_{cfg.run_id}_best.pt", weights_only=True))
-    test_loss, accuracy, balanced_accuracy, f1score = evaluate_testset(model, testloader, device)
+    test_loss, accuracy, balanced_accuracy, f1score = evaluate_testset(model, testloader, device, n_labeled)
     run.log({
         "test_loss": test_loss.item() if hasattr(test_loss, "item") else test_loss,
         "accuracy : test": accuracy,

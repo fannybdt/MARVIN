@@ -30,6 +30,7 @@ class CytometryDataset(Dataset):
         data = data.sample(frac=1, random_state=42).reset_index(drop=True)
         if "label" not in data.columns:
             c = pd.array([-1] * len(data), dtype="int64")
+            self.class_names = []
         else:
             if masked_classes:
                 available = sorted(data["label"].dropna().unique().tolist())
@@ -40,7 +41,8 @@ class CytometryDataset(Dataset):
                         f"Available classes: {available}"
                     )
                 data.loc[data["label"].isin(masked_classes), "label"] = None
-            c = pd.factorize(data["label"], sort=True)[0]
+            c, labels = pd.factorize(data["label"], sort=True)
+            self.class_names: list[str] = labels.tolist()
         feature_cols = [col for col in data.columns if col not in ("label", "patient_id")][:M]
         x = data[feature_cols]
         self.x = torch.tensor(x.values, dtype=torch.float32)
