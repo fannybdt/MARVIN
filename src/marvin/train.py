@@ -50,9 +50,10 @@ class TrainConfig:
     run_id: str
     out_dir: str
     data: str
-    num_steps: int
-    eval_every: int
-    save_every: int
+    num_steps: int | None = None
+    num_epochs: int | None = None
+    eval_every: int = 500
+    save_every: int = 5000
     masked: bool
     mask_ratio: float
     train_loader: DataLoaderConfig
@@ -69,8 +70,17 @@ class TrainConfig:
 def train(cfg: TrainConfig) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    if (cfg.num_steps is None) == (cfg.num_epochs is None):
+        raise ValueError("Specify exactly one of num_steps or num_epochs in the config.")
+
     dataset = CytometryDataset(cfg.data, cfg.model.M, masked_classes=cfg.discovery.masked_classes)
     train_ds, val_ds, test_ds = dataset.split()
+
+    if cfg.num_epochs is not None:
+        steps_per_epoch = len(train_ds) // cfg.train_loader.batch_size
+        num_steps = cfg.num_epochs * steps_per_epoch
+    else:
+        num_steps = cfg.num_steps
 
     trainloader = cfg.train_loader.build(train_ds)
     valloader = cfg.val_loader.build(val_ds)
@@ -93,7 +103,7 @@ def train(cfg: TrainConfig) -> None:
     run = cfg.wandb.build(config={
         "model": f"MARVIN_{cfg.run_id}",
         "batch_size": cfg.train_loader.batch_size,
-        "num_steps": cfg.num_steps,
+        "num_steps": num_steps,
         "learning_rate": cfg.optimizer.lr,
         "eval_every": cfg.eval_every,
         "factor": cfg.model.factor,
@@ -114,7 +124,7 @@ def train(cfg: TrainConfig) -> None:
     Path(cfg.out_dir).mkdir(parents=True, exist_ok=True)
     OmegaConf.save(OmegaConf.create(asdict(cfg)), f"{cfg.out_dir}/config.yaml")
     model.train()
-    for step in range(1, cfg.num_steps + 1):
+    for step in range(1, num_steps + 1):
         epoch, (x, c) = next(train_stream)
         x, c = x.to(device), c.to(device)
 
@@ -147,7 +157,7 @@ def train(cfg: TrainConfig) -> None:
             step_scheduler.step()
             prev_epoch = epoch
 
-        if step % cfg.eval_every == 0 or step == cfg.num_steps:
+        if step % cfg.eval_every == 0 or step == num_steps:
             model.eval()
             with torch.no_grad():
                 _, (x_val, c_val) = next(val_stream)
@@ -177,12 +187,12 @@ def train(cfg: TrainConfig) -> None:
                 "balanced accuracy": balanced_accuracy,
             })
             print(
-                f"Step {step}/{cfg.num_steps},"
+                f"Step {step}/{num_steps},"
                 f" val loss = {val_loss:.4f}, train loss = {loss.item():.4f}",
                 flush=True,
             )
 
-        if step % cfg.save_every == 0 or step == cfg.num_steps:
+        if step % cfg.save_every == 0 or step == num_steps:
             checkpoint = f"{cfg.out_dir}/MARVIN_{cfg.run_id}_{step}.pt"
             torch.save(model.state_dict(), checkpoint)
             print(f"Model saved to {checkpoint}")
@@ -194,7 +204,7 @@ def train(cfg: TrainConfig) -> None:
         "accuracy : test": accuracy,
         "F1-score : test": f1score,
         "balanced accuracy : test": balanced_accuracy,
-    }, step=cfg.num_steps)
+    }, step=num_steps)
     run.finish()
 
 

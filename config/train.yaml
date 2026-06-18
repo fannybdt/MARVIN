@@ -1,35 +1,36 @@
-run_id: test_more_steps
+run_id: poised_discovery
 out_dir: outputs/${run_id}
 
 data: /home/fbodart/scyan_datasets/poised_known.csv  # path to preprocessed CSV
 
-num_steps: 50000
+num_epochs: 50
+# num_steps: 50000 (if preferred over epochs)
 eval_every: 500
 save_every: 10000
 masked: false
 mask_ratio: 0.5
 
 train_loader:
-  batch_size: 64
+  batch_size: 1024
   shuffle: true
   num_workers: 4
   drop_last: true
 
 val_loader:
-  batch_size: 64
+  batch_size: 1024
   shuffle: true
   num_workers: 4
   drop_last: true
 
 test_loader:
-  batch_size: 64
+  batch_size: 1024
   shuffle: false
   num_workers: 0
   drop_last: false
 
 model:
-  M: 32  # number of markers
-  D: 32  # latent dimension
+  M: 39  # number of markers
+  D: 64  # latent dimension
   factor: 8
   dropout: 0.3
   num_blocks: 2
